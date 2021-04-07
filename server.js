@@ -11,97 +11,30 @@ const knex = require('knex')({
   }
 });
 
-const app = express();
 
+const register = require('./controllers/register.js');
+const signin = require('./controllers/signin.js');
+const profile = require('./controllers/profile.js');
+const image = require('./controllers/image.js');
+
+
+const app = express();
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
 app.use(cors());
 
-app.get('/', (req, res) => {
-	res.send('hello world');
-})
+app.get('/', (req, res) => { res.send('hello world') })
 
-app.post('/signin', (req, res) => {
-	const { email, password } = req.body;
-	knex.select('email', 'hash').from('login')
-		.where({'email': email})
-		.then(data => {
-			if (bcrypt.compareSync(password, data[0].hash)) {
-				knex.select('*').from('users')
-				.where({'email': email})
-				.then(user => {
-					res.json(user[0])
-				})
-				.catch(err => res.status(400).json('unable to get user'))
-			} else {
-				res.status(400).json('invalid credentials')
-			}
-		})
-		.catch(err => res.status(400).json('unable to get user'))
-})
+app.post('/signin', (req, res) => { signin.handleSignIn(req, res, knex, bcrypt) })
 
-app.post('/register', (req, res) => {
-	const { email, name, password } = req.body;
+app.post('/register', (req, res) => { register.handleRegister(req, res, knex, bcrypt) })
 
-	const hash = bcrypt.hashSync(password);
+app.get('/profile/:id', (req, res) => { profile.handleProfile(req, res, knex) })
 
-	knex.transaction(trx => {
-		trx.insert({
-			hash: hash,
-			email: email
-		})
-		.into('login')
-		.returning('email')
-		.then(loginEmail => { 
-			trx.insert({
-				email: loginEmail[0],
-				name: name,
-				joined: new Date()
-			})
-			.into('users')
-			.returning('*')
-			.then(user => {
-				res.json(user[0]);
-			})
-			.catch(err => res.status(400).json(err))
-		})
-		.then(trx.commit)
-		.catch(trx.rollback)
-	})
-		.catch(err => res.status(400).json(err, 'Unable to register'))
+app.put('/image', (req, res) => { image.handleImage(req, res, knex) })
 
-})
+app.put('/imageurl', (req, res) => { image.handleAPICall(req, res) })
 
-app.get('/profile/:id', (req, res) => {
-	const { id } = req.params;
 
-	knex.select('*').from('users').where({id : id})
-		.then(user => {
-			if (user.length) {
-				res.json(user[0])
-			} else {
-				res.status(404).json('user not found')
-			}
-			
-		})
-		.catch(err => res.status(400).json('error getting user'))
-})
 
-app.put('/image', (req, res) => {
-	const { id } = req.body;
-
-	knex('users').where({id : id})
-	.increment('entries', 1).returning('entries')
-		.then(entries => {
-			if(entries.length) {
-				res.json(entries[0])
-			} else {
-				res.status(404).json('user not found')
-			}
-		})
-		.catch(err => res.status(400).json('error updating entries'))
-})
-
-app.listen(8080, () => {
-	console.log('face-recognition-api is running on port 8080');
-})
+app.listen(8080, () => { console.log('face-recognition-api is running on port 8080') })
