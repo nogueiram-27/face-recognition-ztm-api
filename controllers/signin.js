@@ -19,7 +19,7 @@ const handleSignIn = (req, res, knex, bcrypt) => {
 				res.status(400).json('invalid credentials')
 			}
 		})
-		.catch(err => res.status(400).json('unable to get user'))
+		.catch(err => res.status(400).json(console.log(err)))
 }
 
 module.exports = {

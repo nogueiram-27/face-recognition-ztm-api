@@ -1,12 +1,15 @@
 const express = require('express');
 const bcrypt = require('bcrypt-nodejs');
 const cors = require('cors');
+if(process.env.NODE_ENV !== 'production') require('dotenv').config();
+const db = process.env.POSTGRES_DB_PASSWORD;
+
 const knex = require('knex')({
   client: 'pg',
   connection: {
     host : '127.0.0.1',
     user : 'postgres',
-    password : 'super-admin',
+    password : db,
     database : 'face_recognition_ztm'
   }
 });
